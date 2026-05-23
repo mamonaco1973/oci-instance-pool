@@ -82,7 +82,7 @@ resource "oci_autoscaling_auto_scaling_configuration" "main" {
 
     capacity {
       initial = 3
-      min     = 2
+      min     = 3
       max     = 6
     }
 
