@@ -6,11 +6,10 @@
 set -euo pipefail
 
 # ------------------------------------------------------------------------------
-# Step 1: Resolve LB IP and OCID from Terraform output
+# Step 1: Resolve LB IP from Terraform output
 # ------------------------------------------------------------------------------
 
 LB_IP=$(terraform -chdir=01-autoscaling output -raw lb_public_ip 2>/dev/null || true)
-LB_OCID=$(terraform -chdir=01-autoscaling output -raw lb_ocid 2>/dev/null || true)
 
 if [ -z "${LB_IP}" ]; then
   echo "ERROR: Could not read Terraform outputs. Run ./apply.sh first."
@@ -20,39 +19,31 @@ fi
 echo "NOTE: Load balancer endpoint: http://${LB_IP}"
 
 # ------------------------------------------------------------------------------
-# Step 2: Wait for healthy backends in asg-backend-set
+# Step 2: Wait for HTTP 200 from the load balancer
 # OCI LB provisioning + instance pool startup can take several minutes —
-# poll every 15s until the backend set reports OK status
+# poll every 30s until /plain returns 200
 # ------------------------------------------------------------------------------
 
-echo "NOTE: Waiting for healthy backends in asg-backend-set..."
-
-# Resolve compartment for OCI CLI calls
-if [ -z "${OCI_COMPARTMENT_ID:-}" ]; then
-  OCI_COMPARTMENT_ID=$(awk -F'=' '/^tenancy[[:space:]]*=/{gsub(/[[:space:]]/, "", $2); print $2; exit}' ~/.oci/config)
-fi
+echo "NOTE: Waiting for HTTP 200 from load balancer..."
 
 TIMEOUT=600
 ELAPSED=0
 
 while true; do
-  STATUS=$(oci lb backend-set-health get \
-    --load-balancer-id "${LB_OCID}" \
-    --backend-set-name "asg-backend-set" \
-    --output text \
-    --query 'data.status' 2>/dev/null || echo "UNKNOWN")
+  HTTP_CODE=$(curl -o /dev/null -s -w "%{http_code}" --max-time 5 \
+    "http://${LB_IP}/plain" 2>/dev/null || echo "000")
 
-  if [ "${STATUS}" = "OK" ]; then
-    echo "NOTE: Backend set status: OK"
+  if [ "${HTTP_CODE}" = "200" ]; then
+    echo "NOTE: Load balancer returned HTTP 200"
     break
   fi
 
   if [ "${ELAPSED}" -ge "${TIMEOUT}" ]; then
-    echo "ERROR: Timed out waiting for healthy backends after ${TIMEOUT}s."
+    echo "ERROR: Timed out waiting for HTTP 200 after ${TIMEOUT}s."
     exit 1
   fi
 
-  echo "NOTE: Backend set status: ${STATUS} — retrying in 30s (${ELAPSED}s elapsed)..."
+  echo "NOTE: HTTP ${HTTP_CODE} — retrying in 30s (${ELAPSED}s elapsed)..."
   sleep 30
   ELAPSED=$((ELAPSED + 30))
 done
