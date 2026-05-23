@@ -81,7 +81,7 @@ resource "oci_autoscaling_auto_scaling_configuration" "main" {
     policy_type  = "threshold"
 
     capacity {
-      initial = 4
+      initial = 3
       min     = 2
       max     = 6
     }
