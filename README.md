@@ -2,9 +2,13 @@
 
 This project demonstrates a minimal OCI Instance Pool deployment using Terraform. It provisions a fleet of Apache web servers behind a flexible Load Balancer, with each instance displaying its own metadata — private IP, instance OCID, availability domain, and shape — on a styled page.
 
+![OCI diagram](oci-instance-pools.png)
+
 Instances run on VM.Standard.A1.Flex (Ampere ARM, 1 OCPU, 4 GB RAM) in a private subnet and are never directly reachable from the internet. All inbound traffic flows through the Load Balancer. A NAT Gateway provides outbound internet access for package installation. CPU-based threshold policies drive automatic scale-out and scale-in between 1 and 6 instances.
 
 This solution is ideal for understanding the fundamentals of OCI Instance Pools without the complexity of application-specific configuration. It uses no Packer, no custom image, and deploys in a single Terraform phase.
+
+![ipool](ipool.png)
 
 ## Prerequisites
 
