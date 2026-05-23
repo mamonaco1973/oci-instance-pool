@@ -17,11 +17,11 @@ until curl -4 -sf --max-time 5 http://yum.oracle.com/ > /dev/null 2>&1; do
 done
 echo "NOTE: Network ready."
 
-echo "NOTE: Installing httpd..."
+echo "NOTE: Installing httpd and jq..."
 # Retry dnf up to 5 minutes — repo endpoints can be transiently unreachable
 # at early boot even after the basic connectivity check passes
 for attempt in $(seq 1 10); do
-  dnf install -y httpd && break
+  dnf install -y httpd jq && break
   if [ "${attempt}" -eq 10 ]; then
     echo "ERROR: dnf failed after 10 attempts, giving up."
     exit 1
@@ -32,26 +32,21 @@ done
 
 # ------------------------------------------------------------------------------
 # Fetch Instance Metadata
-# OCI IMDSv2 requires the Authorization header. python3 is pre-installed
-# on Oracle Linux 9.
+# OCI IMDSv2 requires the Authorization header.
 # ------------------------------------------------------------------------------
 
 METADATA=$(curl -sf -H "Authorization: Bearer Oracle" \
   http://169.254.169.254/opc/v2/instance/)
 
 IP=$(curl -sf -H "Authorization: Bearer Oracle" \
-  http://169.254.169.254/opc/v2/vnics/ | \
-  python3 -c "import sys,json; print(json.load(sys.stdin)[0]['privateIp'])")
+  http://169.254.169.254/opc/v2/vnics/ | jq -r '.[0].privateIp')
 
 # OCIDs are ~100 chars — show last 12 chars of the unique suffix only
-INSTANCE_ID=$(echo "$METADATA" | \
-  python3 -c "import sys,json; ocid=json.load(sys.stdin)['id']; print('...' + ocid.split('.')[-1][-12:])")
+INSTANCE_ID="...$(echo "$METADATA" | jq -r '.id | split(".") | last | .[-12:]')"
 
-AD=$(echo "$METADATA" | \
-  python3 -c "import sys,json; print(json.load(sys.stdin)['availabilityDomain'])")
+AD=$(echo "$METADATA" | jq -r '.availabilityDomain')
 
-SHAPE=$(echo "$METADATA" | \
-  python3 -c "import sys,json; print(json.load(sys.stdin)['shape'])")
+SHAPE=$(echo "$METADATA" | jq -r '.shape')
 
 # ------------------------------------------------------------------------------
 # Write HTML Page
