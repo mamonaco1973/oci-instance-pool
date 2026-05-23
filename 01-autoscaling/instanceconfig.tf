@@ -18,11 +18,11 @@ resource "oci_core_instance_configuration" "main" {
       display_name   = "asg-instance"
       shape          = "VM.Standard.A1.Flex"
 
-      # Cheapest available shape — Ampere ARM at ~$0.01/OCPU/hr vs $0.025
-      # for x86 Flex; 1 OCPU + 1 GB is sufficient for a static Apache page
+      # Ampere ARM at ~$0.01/OCPU/hr — still cheaper than E4.Flex at $0.025.
+      # 1 GB OOMs during dnf on Oracle Linux 9; 4 GB is the comfortable floor.
       shape_config {
         ocpus         = 1
-        memory_in_gbs = 1
+        memory_in_gbs = 4
       }
 
       source_details {

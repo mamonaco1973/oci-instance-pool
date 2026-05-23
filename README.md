@@ -2,7 +2,7 @@
 
 This project demonstrates a minimal OCI Instance Pool deployment using Terraform. It provisions a fleet of Apache web servers behind a flexible Load Balancer, with each instance displaying its own metadata — private IP, instance OCID, availability domain, and shape — on a styled page.
 
-Instances run on VM.Standard.A1.Flex (Ampere ARM, 1 OCPU, 1 GB RAM) in a private subnet and are never directly reachable from the internet. All inbound traffic flows through the Load Balancer. A NAT Gateway provides outbound internet access for package installation. CPU-based threshold policies drive automatic scale-out and scale-in between 1 and 6 instances.
+Instances run on VM.Standard.A1.Flex (Ampere ARM, 1 OCPU, 4 GB RAM) in a private subnet and are never directly reachable from the internet. All inbound traffic flows through the Load Balancer. A NAT Gateway provides outbound internet access for package installation. CPU-based threshold policies drive automatic scale-out and scale-in between 1 and 6 instances.
 
 This solution is ideal for understanding the fundamentals of OCI Instance Pool autoscaling without the complexity of application-specific configuration. It uses no Packer, no custom image, and deploys in a single Terraform phase.
 
@@ -57,7 +57,7 @@ When the deployment completes, the following resources are created:
   - HTTP listener forwarding to the backend set
 
 - **Auto Scaling:**
-  - Instance Configuration: VM.Standard.A1.Flex (Ampere ARM, 1 OCPU, 1 GB), Oracle Linux 9, httpd with OCI IMDSv2 metadata page
+  - Instance Configuration: VM.Standard.A1.Flex (Ampere ARM, 1 OCPU, 4 GB), Oracle Linux 9, httpd with OCI IMDSv2 metadata page
   - Instance Pool: min 1, initial 4, max 6 — spread across AD-1 and AD-2
   - Scale-out rule: +1 instance when CPU > 60%
   - Scale-in rule: -1 instance when CPU < 60%

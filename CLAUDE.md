@@ -20,7 +20,7 @@ OCID, availability domain, shape) on a styled page. Instances are private
 Single Terraform phase in `01-autoscaling/`. No modules, no workspaces.
 
 - **Region:** us-ashburn-1
-- **Instance:** VM.Standard.A1.Flex (Ampere ARM, 1 OCPU, 1 GB RAM) — cheapest shape
+- **Instance:** VM.Standard.A1.Flex (Ampere ARM, 1 OCPU, 4 GB RAM) — cheapest shape
 - **LB:** OCI flexible Load Balancer (L7) — round-robin, even distribution
 - **Pool:** min 1, initial 4, max 6 across AD-1 and AD-2 (private subnet)
 - **Scaling:** CPU threshold policy → scale-out/scale-in rules
