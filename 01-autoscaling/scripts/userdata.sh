@@ -33,10 +33,9 @@ IP=$(curl -sf -H "Authorization: Bearer Oracle" \
   http://169.254.169.254/opc/v2/vnics/ | \
   python3 -c "import sys,json; print(json.load(sys.stdin)[0]['privateIp'])")
 
-# Full OCID is ~100 chars — show only the last 20 to keep the card readable
-INSTANCE_ID_FULL=$(echo "$METADATA" | \
-  python3 -c "import sys,json; print(json.load(sys.stdin)['id'])")
-INSTANCE_ID="...${INSTANCE_ID_FULL: -20}"
+# OCIDs are ~100 chars — show last 12 chars of the unique suffix only
+INSTANCE_ID=$(echo "$METADATA" | \
+  python3 -c "import sys,json; ocid=json.load(sys.stdin)['id']; print('...' + ocid.split('.')[-1][-12:])")
 
 AD=$(echo "$METADATA" | \
   python3 -c "import sys,json; print(json.load(sys.stdin)['availabilityDomain'])")
