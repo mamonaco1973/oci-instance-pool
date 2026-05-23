@@ -20,7 +20,7 @@ resource "oci_core_instance_pool" "main" {
   size = 4
 
   lifecycle {
-    ignore_changes = [size, actual_state]
+    ignore_changes = [size]
   }
 
   # Spread instances across AD-1 and AD-2 — pool distributes evenly across
