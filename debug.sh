@@ -55,9 +55,8 @@ echo "==========================================================================
 
 oci compute instance list \
   --compartment-id "${OCI_COMPARTMENT_ID}" \
-  --display-name "asg-instance" \
   --output table \
-  --query 'data[*].{"State":\"lifecycle-state\","AD":\"availability-domain\","IP":\"primary-private-ip-address\","ID":id}' \
+  --query 'data[*].{"State":\"lifecycle-state\","AD":\"availability-domain\","IP":\"primary-private-ip-address\","Name":\"display-name\"}' \
   2>/dev/null || echo "  Could not list instances."
 
 # ------------------------------------------------------------------------------
@@ -73,7 +72,6 @@ echo "==========================================================================
 
 INSTANCE_ID=$(oci compute instance list \
   --compartment-id "${OCI_COMPARTMENT_ID}" \
-  --display-name "asg-instance" \
   --lifecycle-state RUNNING \
   --query 'data[0].id' \
   --raw-output 2>/dev/null || echo "")
