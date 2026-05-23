@@ -1,53 +1,72 @@
 # ================================================================================
 # Provider Configuration
-# Pins the AWS provider to the 5.x major version. The ~> constraint allows
-# minor-version upgrades (5.1, 5.2...) but blocks 6.x, preventing breaking
-# changes from entering the build silently.
+# Auth is read from ~/.oci/config DEFAULT profile — no credentials in code
 # ================================================================================
 
 terraform {
   required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
+    oci = {
+      source  = "oracle/oci"
+      version = "~> 6.0"
+    }
+    tls = {
+      source  = "hashicorp/tls"
+      version = "~> 4.0"
+    }
+    local = {
+      source  = "hashicorp/local"
+      version = "~> 2.0"
     }
   }
 }
 
-provider "aws" {
-  region = "us-east-2"
+provider "oci" {
+  region = "us-ashburn-1"
+}
+
+variable "compartment_ocid" {
+  description = "OCID of the compartment to deploy resources into"
 }
 
 # ================================================================================
-# AMI Lookup
-# Queries AWS for the latest Amazon Linux 2023 AMI at plan time, eliminating
-# the need to hard-code an AMI ID or maintain a Packer pipeline. The filters
-# narrow results to x86_64 HVM EBS-backed images published by Amazon, ensuring
-# only official, production-grade images are selected.
+# SSH Key Pair
+# Generated fresh each deploy — private key written to keys/ (gitignored).
+# ECDSA P-256 is smaller and faster than RSA while being equally secure.
 # ================================================================================
 
-data "aws_ami" "al2023" {
-  most_recent = true
-  owners      = ["amazon"]
+resource "tls_private_key" "ssh" {
+  algorithm   = "ECDSA"
+  ecdsa_curve = "P256"
+}
 
-  # al2023-ami-2023* matches official AL2023 releases; excludes minimal/ECS
-  # variants that ship without the package manager configured for httpd
-  filter {
-    name   = "name"
-    values = ["al2023-ami-2023*arm64"]
-  }
+resource "local_file" "private_key" {
+  content         = tls_private_key.ssh.private_key_openssh
+  filename        = "./keys/Private_Key"
+  file_permission = "0600"
+}
 
-  # HVM (hardware virtual machine) is required for current-gen instance types;
-  # paravirtual is a legacy mode not supported on t2/t3 and newer
-  filter {
-    name   = "virtualization-type"
-    values = ["hvm"]
-  }
+# ================================================================================
+# Availability Domains
+# OCI requires explicit AD selection for instance pool placement — resolved
+# dynamically so this works across regions with different AD counts.
+# ================================================================================
 
-  # EBS-backed instances support stop/start and snapshot; instance-store
-  # instances are ephemeral and cannot be stopped — EBS is the safe default
-  filter {
-    name   = "root-device-type"
-    values = ["ebs"]
-  }
+data "oci_identity_availability_domains" "ads" {
+  compartment_id = var.compartment_ocid
+}
+
+# ================================================================================
+# Image Lookup
+# Queries OCI for the latest Ubuntu 24.04 image compatible with
+# VM.Standard.E4.Flex, eliminating the need to hard-code an image OCID.
+# sort_order = DESC + most_recent equivalent returns the newest matching image.
+# ================================================================================
+
+data "oci_core_images" "oracle_linux" {
+  compartment_id           = var.compartment_ocid
+  operating_system         = "Oracle Linux"
+  operating_system_version = "9"
+  shape                    = "VM.Standard.A1.Flex"
+  sort_by                  = "TIMECREATED"
+  sort_order               = "DESC"
 }

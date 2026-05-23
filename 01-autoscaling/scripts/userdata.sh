@@ -2,30 +2,47 @@
 # ================================================================================
 # userdata.sh
 # Runs once on first boot via cloud-init. Installs Apache, fetches instance
-# metadata via IMDSv2, and writes an AWS-themed HTML page to the web root.
+# metadata via OCI IMDSv2, and writes an OCI-themed HTML page to the web root.
 # ================================================================================
 
-yum install -y httpd
+# Redirect all stdout and stderr to the log file for post-boot debugging
+exec > /root/userdata.log 2>&1
+
+# OCI fires cloud-init before internet routing is fully established — wait
+# for actual HTTP connectivity before running dnf
+echo "NOTE: Waiting for network connectivity..."
+until curl -4 -sf --max-time 5 http://yum.oracle.com/ > /dev/null 2>&1; do
+  echo "NOTE: Network not ready, retrying in 5 seconds..."
+  sleep 5
+done
+echo "NOTE: Network ready."
+
+echo "NOTE: Installing httpd..."
+dnf install -y httpd
 
 # ------------------------------------------------------------------------------
 # Fetch Instance Metadata
-# IMDSv2 requires a session token — IMDSv1 is disabled on AL2023 by default
+# OCI IMDSv2 requires the Authorization header. python3 is pre-installed
+# on Oracle Linux 9.
 # ------------------------------------------------------------------------------
 
-TOKEN=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" \
-  -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
+METADATA=$(curl -sf -H "Authorization: Bearer Oracle" \
+  http://169.254.169.254/opc/v2/instance/)
 
-IP=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" \
-  http://169.254.169.254/latest/meta-data/local-ipv4)
+IP=$(curl -sf -H "Authorization: Bearer Oracle" \
+  http://169.254.169.254/opc/v2/vnics/ | \
+  python3 -c "import sys,json; print(json.load(sys.stdin)[0]['privateIp'])")
 
-INSTANCE_ID=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" \
-  http://169.254.169.254/latest/meta-data/instance-id)
+# Full OCID is ~100 chars — show only the last 20 to keep the card readable
+INSTANCE_ID_FULL=$(echo "$METADATA" | \
+  python3 -c "import sys,json; print(json.load(sys.stdin)['id'])")
+INSTANCE_ID="...${INSTANCE_ID_FULL: -20}"
 
-AZ=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" \
-  http://169.254.169.254/latest/meta-data/placement/availability-zone)
+AD=$(echo "$METADATA" | \
+  python3 -c "import sys,json; print(json.load(sys.stdin)['availabilityDomain'])")
 
-INSTANCE_TYPE=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" \
-  http://169.254.169.254/latest/meta-data/instance-type)
+SHAPE=$(echo "$METADATA" | \
+  python3 -c "import sys,json; print(json.load(sys.stdin)['shape'])")
 
 # ------------------------------------------------------------------------------
 # Write HTML Page
@@ -37,7 +54,7 @@ cat > /var/www/html/index.html <<HTMLEOF
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AWS Auto Scaling</title>
+  <title>OCI Auto Scaling</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -51,7 +68,7 @@ cat > /var/www/html/index.html <<HTMLEOF
     .card {
       background: #1A2535;
       border-radius: 6px;
-      border-top: 3px solid #FF9900;
+      border-top: 3px solid #C74634;
       padding: 48px 52px;
       width: 480px;
       box-shadow: 0 12px 40px rgba(0,0,0,0.5);
@@ -62,9 +79,9 @@ cat > /var/www/html/index.html <<HTMLEOF
       gap: 12px;
       margin-bottom: 28px;
     }
-    .aws-badge {
-      background: #FF9900;
-      color: #232F3E;
+    .oci-badge {
+      background: #C74634;
+      color: #FFFFFF;
       font-size: 11px;
       font-weight: 800;
       padding: 3px 8px;
@@ -95,7 +112,7 @@ cat > /var/www/html/index.html <<HTMLEOF
       width: 50%;
     }
     .value {
-      color: #FF9900;
+      color: #C74634;
       font-family: 'Courier New', Courier, monospace;
       font-size: 14px;
       font-weight: 600;
@@ -116,8 +133,8 @@ cat > /var/www/html/index.html <<HTMLEOF
 <body>
   <div class="card">
     <div class="badge-row">
-      <span class="aws-badge">AWS</span>
-      <span class="badge-label">EC2 Auto Scaling</span>
+      <span class="oci-badge">OCI</span>
+      <span class="badge-label">Instance Pool Auto Scaling</span>
     </div>
     <div class="title">&#x2601; Instance Details</div>
     <table>
@@ -130,15 +147,15 @@ cat > /var/www/html/index.html <<HTMLEOF
         <td class="value">$INSTANCE_ID</td>
       </tr>
       <tr>
-        <td class="label">Availability Zone</td>
-        <td class="value">$AZ</td>
+        <td class="label">Availability Domain</td>
+        <td class="value">$AD</td>
       </tr>
       <tr>
-        <td class="label">Instance Type</td>
-        <td class="value">$INSTANCE_TYPE</td>
+        <td class="label">Shape</td>
+        <td class="value">$SHAPE</td>
       </tr>
     </table>
-    <div class="footer">Amazon Web Services &bull; Auto Scaling Group</div>
+    <div class="footer">Oracle Cloud Infrastructure &bull; Instance Pool</div>
   </div>
 </body>
 </html>
@@ -148,10 +165,14 @@ HTMLEOF
 # validate.sh and polluting terminal output
 echo "$IP" > /var/www/html/plain
 
-# ------------------------------------------------------------------------------
-# Start Apache
-# enable persists the service across reboots; start brings it up immediately
-# ------------------------------------------------------------------------------
-
+echo "NOTE: Enabling and starting httpd..."
 systemctl enable httpd
 systemctl start httpd
+
+# Oracle Linux 9 ships with firewalld active — open port 80 so the load
+# balancer health checks and traffic can reach httpd
+echo "NOTE: Opening port 80 in firewalld..."
+firewall-cmd --permanent --add-service=http
+firewall-cmd --reload
+
+echo "NOTE: Done."

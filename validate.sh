@@ -1,79 +1,78 @@
 #!/bin/bash
-# ===============================================================================
+# ================================================================================
 # File: validate.sh
-# ===============================================================================
+# ================================================================================
 
 set -euo pipefail
 
-REGION="us-east-2"
-
 # ------------------------------------------------------------------------------
-# Step 1: Resolve ALB DNS from Terraform output
+# Step 1: Resolve LB IP and OCID from Terraform output
 # ------------------------------------------------------------------------------
 
-ALB_DNS=$(terraform -chdir=01-autoscaling output -raw alb_dns_name 2>/dev/null || true)
+LB_IP=$(terraform -chdir=01-autoscaling output -raw lb_public_ip 2>/dev/null || true)
+LB_OCID=$(terraform -chdir=01-autoscaling output -raw lb_ocid 2>/dev/null || true)
 
-if [ -z "${ALB_DNS}" ]; then
+if [ -z "${LB_IP}" ]; then
   echo "ERROR: Could not read Terraform outputs. Run ./apply.sh first."
   exit 1
 fi
 
-echo "NOTE: ALB endpoint: http://${ALB_DNS}"
+echo "NOTE: Load balancer endpoint: http://${LB_IP}"
 
 # ------------------------------------------------------------------------------
-# Step 2: Wait for healthy targets in asg-tg
-# Polls every 10s — instances need time for httpd to start and pass checks
+# Step 2: Wait for healthy backends in asg-backend-set
+# OCI LB provisioning + instance pool startup can take several minutes —
+# poll every 15s until the backend set reports OK status
 # ------------------------------------------------------------------------------
 
-TG_ARN=$(aws elbv2 describe-target-groups \
-  --region "${REGION}" \
-  --names asg-tg \
-  --query 'TargetGroups[0].TargetGroupArn' \
-  --output text)
+echo "NOTE: Waiting for healthy backends in asg-backend-set..."
 
-echo "NOTE: Waiting for healthy targets in asg-tg..."
+# Resolve compartment for OCI CLI calls
+if [ -z "${OCI_COMPARTMENT_ID:-}" ]; then
+  OCI_COMPARTMENT_ID=$(awk -F'=' '/^tenancy[[:space:]]*=/{gsub(/[[:space:]]/, "", $2); print $2; exit}' ~/.oci/config)
+fi
 
-TIMEOUT=300
+TIMEOUT=600
 ELAPSED=0
 
 while true; do
-  HEALTHY=$(aws elbv2 describe-target-health \
-    --region "${REGION}" \
-    --target-group-arn "${TG_ARN}" \
-    --query 'TargetHealthDescriptions[?TargetHealth.State==`healthy`] | length(@)' \
-    --output text)
+  STATUS=$(oci lb backend-set-health get \
+    --load-balancer-id "${LB_OCID}" \
+    --backend-set-name "asg-backend-set" \
+    --output text \
+    --query 'data.status' 2>/dev/null || echo "UNKNOWN")
 
-  if [ "${HEALTHY}" -ge 1 ]; then
-    echo "NOTE: ${HEALTHY} healthy target(s) registered."
+  if [ "${STATUS}" = "OK" ]; then
+    echo "NOTE: Backend set status: OK"
     break
   fi
 
   if [ "${ELAPSED}" -ge "${TIMEOUT}" ]; then
-    echo "ERROR: Timed out waiting for healthy targets after ${TIMEOUT}s."
+    echo "ERROR: Timed out waiting for healthy backends after ${TIMEOUT}s."
     exit 1
   fi
 
-  echo "NOTE: No healthy targets yet — retrying in 10s (${ELAPSED}s elapsed)..."
-  sleep 10
-  ELAPSED=$((ELAPSED + 10))
+  echo "NOTE: Backend set status: ${STATUS} — retrying in 15s (${ELAPSED}s elapsed)..."
+  sleep 15
+  ELAPSED=$((ELAPSED + 15))
 done
 
 # ------------------------------------------------------------------------------
-# Step 3: Sample ALB responses
-# Hit the endpoint 6 times — different IPs confirm load balancing is working
+# Step 3: Sample load balancer responses
+# Hit the endpoint 6 times — different private IPs confirm load balancing works
 # ------------------------------------------------------------------------------
 
-echo "NOTE: Sampling ALB responses..."
+echo "NOTE: Sampling load balancer responses..."
 echo ""
 
 for i in $(seq 1 6); do
-  RESPONSE=$(curl -sf "http://${ALB_DNS}/plain")
+  RESPONSE=$(curl -sf "http://${LB_IP}/plain")
   echo "  [${i}] ${RESPONSE}"
 done
 
 echo ""
 echo "================================================================================="
-echo "  Auto Scaling Group — Deployment validated!"
+echo "  Instance Pool — Deployment validated!"
 echo "================================================================================="
-echo "  ALB : http://${ALB_DNS}"
+echo "  LB  : http://${LB_IP}"
 echo "================================================================================="
