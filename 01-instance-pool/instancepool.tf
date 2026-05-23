@@ -60,7 +60,6 @@ resource "oci_core_instance_pool" "main" {
 # | Rule         | Condition   | Action      |
 # |--------------|-------------|-------------|
 # | asg-scale-out| CPU > 60%   | +1 instance |
-# | asg-scale-in | CPU < 60%   | -1 instance |
 # ================================================================================
 
 resource "oci_autoscaling_auto_scaling_configuration" "main" {
@@ -83,9 +82,33 @@ resource "oci_autoscaling_auto_scaling_configuration" "main" {
 
     capacity {
       initial = 4
-      min     = 1
+      min     = 2
       max     = 6
     }
+
+    # Scale-in is intentionally disabled. OCI uses a single cool-down value for
+    # all rules — there is no per-rule cool-down like AWS CloudWatch alarms.
+    # With the minimum 300s cool-down, idle instances (CPU ~0%) would drain the
+    # pool to min=1 within minutes of provisioning. Removing the scale-in rule
+    # keeps the pool stable for demos; re-enable it for production workloads
+    # and set the threshold well below the scale-out value to avoid oscillation.
+    #
+    # To re-enable scale-in, uncomment the block below:
+    #
+    # rules {
+    #   display_name = "asg-scale-in"
+    #   action {
+    #     type  = "CHANGE_COUNT_BY"
+    #     value = -1
+    #   }
+    #   metric {
+    #     metric_type = "CPU_UTILIZATION"
+    #     threshold {
+    #       operator = "LT"
+    #       value    = 10
+    #     }
+    #   }
+    # }
 
     # Scale-out: +1 instance when average CPU exceeds 60%
     rules {
@@ -103,20 +126,5 @@ resource "oci_autoscaling_auto_scaling_configuration" "main" {
       }
     }
 
-    # Scale-in: -1 instance when average CPU falls below 60%
-    rules {
-      display_name = "asg-scale-in"
-      action {
-        type  = "CHANGE_COUNT_BY"
-        value = -1
-      }
-      metric {
-        metric_type = "CPU_UTILIZATION"
-        threshold {
-          operator = "LT"
-          value    = 60
-        }
-      }
-    }
   }
 }

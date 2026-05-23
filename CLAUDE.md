@@ -34,7 +34,6 @@ The 300s cool-down (OCI minimum) prevents rapid flapping.
 | Rule         | Condition | Cool-down | Action      |
 |--------------|-----------|-----------|-------------|
 | asg-scale-out| CPU > 60% | 300s      | +1 instance |
-| asg-scale-in | CPU < 60% | 300s      | -1 instance |
 
 ## Validation
 

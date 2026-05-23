@@ -70,9 +70,8 @@ When the deployment completes, the following resources are created:
 | Rule          | Condition | Cool-down | Action      |
 |---------------|-----------|-----------|-------------|
 | asg-scale-out | CPU > 60% | 300s      | +1 instance |
-| asg-scale-in  | CPU < 60% | 300s      | -1 instance |
 
-The 300-second cool-down (OCI minimum) prevents instances from being removed during brief quiet periods.
+The 300-second cool-down (OCI minimum) prevents repeated scale-out events before load stabilizes.
 
 ---
 
