@@ -9,7 +9,7 @@ set -euo pipefail
 # Step 1: Resolve LB IP from Terraform output
 # ------------------------------------------------------------------------------
 
-LB_IP=$(terraform -chdir=01-autoscaling output -raw lb_public_ip 2>/dev/null || true)
+LB_IP=$(terraform -chdir=01-instance-pool output -raw lb_public_ip 2>/dev/null || true)
 
 if [ -z "${LB_IP}" ]; then
   echo "ERROR: Could not read Terraform outputs. Run ./apply.sh first."

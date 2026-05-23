@@ -17,7 +17,7 @@ OCID, availability domain, shape) on a styled page. Instances are private
 
 ## Architecture
 
-Single Terraform phase in `01-autoscaling/`. No modules, no workspaces.
+Single Terraform phase in `01-instance-pool/`. No modules, no workspaces.
 
 - **Region:** us-ashburn-1
 - **Instance:** VM.Standard.A1.Flex (Ampere ARM, 1 OCPU, 4 GB RAM) — cheapest shape
@@ -46,12 +46,12 @@ IPs across responses confirm per-request load balancing is working.
 
 | File | Purpose |
 |------|---------|
-| `01-autoscaling/instanceconfig.tf` | Instance configuration — shape, image, user data |
-| `01-autoscaling/instancepool.tf` | Instance pool, placement, autoscaling policy |
-| `01-autoscaling/lb.tf` | Load balancer, backend set, listener, health check |
-| `01-autoscaling/networking.tf` | VCN, public/private subnets, IGW, NAT Gateway |
-| `01-autoscaling/security.tf` | Security lists — public port 80, private from LB subnet only |
-| `01-autoscaling/scripts/userdata.sh` | cloud-init: installs apache2, fetches OCI IMDSv2, writes HTML + /plain |
+| `01-instance-pool/instanceconfig.tf` | Instance configuration — shape, image, user data |
+| `01-instance-pool/instancepool.tf` | Instance pool, placement, autoscaling policy |
+| `01-instance-pool/lb.tf` | Load balancer, backend set, listener, health check |
+| `01-instance-pool/networking.tf` | VCN, public/private subnets, IGW, NAT Gateway |
+| `01-instance-pool/security.tf` | Security lists — public port 80, private from LB subnet only |
+| `01-instance-pool/scripts/userdata.sh` | cloud-init: installs apache2, fetches OCI IMDSv2, writes HTML + /plain |
 
 ## OCI Quirks (all baked into userdata.sh or Terraform)
 

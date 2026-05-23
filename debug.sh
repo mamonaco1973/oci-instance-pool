@@ -6,8 +6,8 @@ if [ -z "${OCI_COMPARTMENT_ID:-}" ]; then
   OCI_COMPARTMENT_ID=$(awk -F'=' '/^tenancy[[:space:]]*=/{gsub(/[[:space:]]/, "", $2); print $2; exit}' ~/.oci/config)
 fi
 
-LB_OCID=$(terraform -chdir=01-autoscaling output -raw lb_ocid 2>/dev/null || true)
-LB_IP=$(terraform -chdir=01-autoscaling output -raw lb_public_ip 2>/dev/null || true)
+LB_OCID=$(terraform -chdir=01-instance-pool output -raw lb_ocid 2>/dev/null || true)
+LB_IP=$(terraform -chdir=01-instance-pool output -raw lb_public_ip 2>/dev/null || true)
 
 if [ -z "${LB_OCID}" ]; then
   echo "ERROR: Could not read Terraform outputs. Run ./apply.sh first."

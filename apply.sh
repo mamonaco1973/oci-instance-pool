@@ -13,7 +13,7 @@ if [ -z "${OCI_COMPARTMENT_ID:-}" ]; then
 fi
 export TF_VAR_compartment_ocid="$OCI_COMPARTMENT_ID"
 
-terraform -chdir=01-autoscaling init
-terraform -chdir=01-autoscaling apply -auto-approve
+terraform -chdir=01-instance-pool init
+terraform -chdir=01-instance-pool apply -auto-approve
 
 ./validate.sh

@@ -14,7 +14,7 @@ LOCAL_PORT=2222
 # Resolve bastion OCID from Terraform output
 # ------------------------------------------------------------------------------
 
-BASTION_ID=$(terraform -chdir=01-autoscaling output -raw bastion_id 2>/dev/null || true)
+BASTION_ID=$(terraform -chdir=01-instance-pool output -raw bastion_id 2>/dev/null || true)
 if [ -z "${BASTION_ID}" ]; then
   echo "ERROR: Could not read bastion_id from Terraform outputs. Run ./apply.sh first."
   exit 1
@@ -108,6 +108,6 @@ sleep 3
 
 ssh -o StrictHostKeyChecking=no \
   -o UserKnownHostsFile=/dev/null \
-  -i 01-autoscaling/keys/Private_Key \
+  -i 01-instance-pool/keys/Private_Key \
   -p "${LOCAL_PORT}" \
   opc@localhost
