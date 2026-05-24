@@ -68,50 +68,50 @@ cat > /var/www/html/index.html <<HTMLEOF
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 16px;
+      padding: 24px;
     }
     .card {
       background: #1A2535;
-      border-radius: 6px;
-      border-top: 4px solid #C74634;
-      padding: 36px 32px;
-      width: min(480px, 100%);
+      border-radius: 9px;
+      border-top: 6px solid #C74634;
+      padding: 54px 48px;
+      width: min(720px, 100%);
       box-shadow: 0 12px 40px rgba(0,0,0,0.5);
     }
     .badge-row {
       display: flex;
       align-items: center;
-      gap: 12px;
-      margin-bottom: 24px;
+      gap: 18px;
+      margin-bottom: 36px;
     }
     .oci-badge {
       background: #C74634;
       color: #FFFFFF;
-      font-size: 13px;
+      font-size: 19px;
       font-weight: 800;
-      padding: 4px 10px;
-      border-radius: 2px;
+      padding: 6px 15px;
+      border-radius: 3px;
       letter-spacing: 1px;
     }
     .badge-label {
       color: #8A9BB0;
-      font-size: 13px;
+      font-size: 19px;
       letter-spacing: 1px;
       text-transform: uppercase;
     }
     .title {
       color: #FFFFFF;
-      font-size: 22px;
+      font-size: 33px;
       font-weight: 300;
-      margin-bottom: 28px;
+      margin-bottom: 42px;
     }
     table { width: 100%; border-collapse: collapse; }
     tr { border-bottom: 1px solid #263040; }
     tr:last-child { border-bottom: none; }
-    td { padding: 14px 0; vertical-align: top; }
+    td { padding: 21px 0; vertical-align: top; }
     .label {
       color: #8A9BB0;
-      font-size: 14px;
+      font-size: 21px;
       letter-spacing: 0.8px;
       text-transform: uppercase;
       width: 45%;
@@ -119,23 +119,23 @@ cat > /var/www/html/index.html <<HTMLEOF
     .value {
       color: #FFFFFF;
       font-family: 'Courier New', Courier, monospace;
-      font-size: 16px;
+      font-size: 24px;
       font-weight: 600;
       text-align: right;
       word-break: break-all;
     }
-    @media (max-width: 420px) {
+    @media (max-width: 630px) {
       td { display: block; }
       .label { width: 100%; padding-bottom: 4px; }
-      .value { text-align: left; padding-top: 0; font-size: 18px; }
+      .value { text-align: left; padding-top: 0; font-size: 27px; }
     }
     .footer {
-      margin-top: 28px;
-      padding-top: 18px;
+      margin-top: 42px;
+      padding-top: 27px;
       border-top: 1px solid #263040;
       text-align: center;
       color: #4A5A6A;
-      font-size: 12px;
+      font-size: 18px;
       letter-spacing: 1.5px;
       text-transform: uppercase;
     }
