@@ -68,68 +68,75 @@ cat > /var/www/html/index.html <<HTMLEOF
       display: flex;
       align-items: center;
       justify-content: center;
+      padding: 16px;
     }
     .card {
       background: #1A2535;
       border-radius: 6px;
-      border-top: 3px solid #C74634;
-      padding: 48px 52px;
-      width: 480px;
+      border-top: 4px solid #C74634;
+      padding: 36px 32px;
+      width: min(480px, 100%);
       box-shadow: 0 12px 40px rgba(0,0,0,0.5);
     }
     .badge-row {
       display: flex;
       align-items: center;
       gap: 12px;
-      margin-bottom: 28px;
+      margin-bottom: 24px;
     }
     .oci-badge {
       background: #C74634;
       color: #FFFFFF;
-      font-size: 11px;
+      font-size: 13px;
       font-weight: 800;
-      padding: 3px 8px;
+      padding: 4px 10px;
       border-radius: 2px;
       letter-spacing: 1px;
     }
     .badge-label {
-      color: #6B7A90;
-      font-size: 12px;
-      letter-spacing: 1.5px;
+      color: #8A9BB0;
+      font-size: 13px;
+      letter-spacing: 1px;
       text-transform: uppercase;
     }
     .title {
       color: #FFFFFF;
-      font-size: 20px;
+      font-size: 22px;
       font-weight: 300;
-      margin-bottom: 36px;
+      margin-bottom: 28px;
     }
     table { width: 100%; border-collapse: collapse; }
     tr { border-bottom: 1px solid #263040; }
     tr:last-child { border-bottom: none; }
-    td { padding: 14px 0; }
+    td { padding: 14px 0; vertical-align: top; }
     .label {
-      color: #6B7A90;
-      font-size: 11px;
-      letter-spacing: 1.2px;
+      color: #8A9BB0;
+      font-size: 14px;
+      letter-spacing: 0.8px;
       text-transform: uppercase;
-      width: 50%;
+      width: 45%;
     }
     .value {
-      color: #C74634;
+      color: #FFFFFF;
       font-family: 'Courier New', Courier, monospace;
-      font-size: 14px;
+      font-size: 16px;
       font-weight: 600;
       text-align: right;
+      word-break: break-all;
+    }
+    @media (max-width: 420px) {
+      td { display: block; }
+      .label { width: 100%; padding-bottom: 4px; }
+      .value { text-align: left; padding-top: 0; font-size: 18px; }
     }
     .footer {
-      margin-top: 32px;
-      padding-top: 20px;
+      margin-top: 28px;
+      padding-top: 18px;
       border-top: 1px solid #263040;
       text-align: center;
-      color: #3A4A5A;
-      font-size: 10px;
-      letter-spacing: 2px;
+      color: #4A5A6A;
+      font-size: 12px;
+      letter-spacing: 1.5px;
       text-transform: uppercase;
     }
   </style>
