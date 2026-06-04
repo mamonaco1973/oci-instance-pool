@@ -10,6 +10,10 @@ This solution is ideal for understanding the fundamentals of OCI Instance Pools 
 
 ![ipool](ipool.png)
 
+See it in action — full deployment walkthrough below.
+
+[![Watch the video](https://img.youtube.com/vi/FDhxa3M9RSk/maxresdefault.jpg)](https://www.youtube.com/watch?v=FDhxa3M9RSk)
+
 ## Prerequisites
 
 * [An OCI Account](https://cloud.oracle.com/)
